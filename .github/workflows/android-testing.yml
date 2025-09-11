@@ -242,9 +242,21 @@ jobs:
           # Additional wait for system to stabilize
           sleep 15
           
-          # Verify emulator is ready
-          adb devices
-          echo "Boot completed: $(adb shell getprop sys.boot_completed)"
+          # Verify emulator is ready and validate final state
+          echo "Final emulator validation..."
+          adb devices -l
+          
+          # Check if we have a working device
+          if ! adb devices | grep -q "device$"; then
+            echo "❌ Emulator setup failed - no working devices found"
+            echo "Debug information:"
+            adb devices -l
+            ps aux | grep emulator || true
+            adb shell getprop sys.boot_completed 2>/dev/null || echo "Cannot get boot status"
+            exit 1
+          fi
+          
+          echo "Boot completed: $(adb shell getprop sys.boot_completed 2>/dev/null || echo 'Unknown')"
           echo "✅ Android emulator is ready for testing"
           
       # -----------------------------------------------------------------------
@@ -284,7 +296,36 @@ jobs:
         run: |
           echo "Deploying MerkleKV demo to Android emulator..."
           
+          # Validate emulator is available before deployment
+          echo "Checking emulator availability..."
+          
+          # Wait for emulator to be fully ready
+          echo "Waiting for emulator to be ready for app installation..."
+          for i in {1..60}; do
+            if adb devices | grep -q "device$"; then
+              echo "✅ Emulator is ready for app installation"
+              break
+            fi
+            echo "Waiting for emulator readiness... ($i/60)"
+            adb devices
+            sleep 5
+          done
+          
+          # Final device check
+          echo "Current ADB devices status:"
+          adb devices -l
+          
+          # Check if we have any devices before trying to install
+          if ! adb devices | grep -q "device$"; then
+            echo "❌ No devices available for installation"
+            echo "Debug information:"
+            adb devices -l
+            ps aux | grep emulator || true
+            exit 1
+          fi
+          
           # Install APK
+          echo "Installing APK to emulator..."
           adb install -r apps/flutter_demo/build/app/outputs/flutter-apk/app-debug.apk
           
           # Verify installation

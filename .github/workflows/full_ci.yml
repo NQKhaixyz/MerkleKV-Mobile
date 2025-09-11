@@ -624,9 +624,21 @@ jobs:
           # Additional wait for system to stabilize
           sleep 15
           
-          # Verify emulator is ready
+          # Verify emulator is ready and validate final state
+          echo "Final emulator validation..."
           adb devices -l
-          echo "Boot completed: $(adb shell getprop sys.boot_completed 2>/dev/null || echo 'N/A')"
+          
+          # Check if we have a working device
+          if ! adb devices | grep -q "device$"; then
+            echo "❌ Emulator setup failed - no working devices found"
+            echo "Debug information:"
+            adb devices -l
+            ps aux | grep emulator || true
+            adb shell getprop sys.boot_completed 2>/dev/null || echo "Cannot get boot status"
+            exit 1
+          fi
+          
+          echo "Boot completed: $(adb shell getprop sys.boot_completed 2>/dev/null || echo 'Unknown')"
           echo "✅ Android emulator ready for testing"
           
       # -----------------------------------------------------------------------
@@ -641,6 +653,18 @@ jobs:
           
           echo "Building Flutter demo application..."
           
+          # Validate emulator is available before building and deployment
+          echo "Validating emulator availability..."
+          
+          # Check if we have any devices before trying to install
+          if ! adb devices | grep -q "device$"; then
+            echo "❌ No devices available for installation"
+            echo "Debug information:"
+            adb devices -l
+            ps aux | grep emulator || true
+            exit 1
+          fi
+          
           # Clean previous builds
           flutter clean
           
@@ -650,7 +674,8 @@ jobs:
           # Build debug APK for testing
           flutter build apk --debug
           
-          # Install on emulator
+          # Install on emulator with error handling
+          echo "Installing APK to emulator..."
           adb install -r build/app/outputs/flutter-apk/app-debug.apk
           
           # Verify installation
@@ -658,6 +683,8 @@ jobs:
             echo "✅ Flutter demo app installed successfully"
           else
             echo "❌ Flutter demo app installation failed"
+            echo "Available packages:"
+            adb shell pm list packages | grep flutter || echo "No flutter packages found"
             exit 1
           fi
           
