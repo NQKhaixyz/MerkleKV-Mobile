@@ -70,7 +70,7 @@ void main() {
     });
 
     test('Command can be created and serialized', () {
-      final command = Command(
+      const command = Command(
         id: 'test-id',
         op: 'SET',
         key: 'test-key',
@@ -91,7 +91,7 @@ void main() {
     });
 
     test('Response can be created', () {
-      final response = Response(
+      const response = Response(
         id: 'test-id',
         status: ResponseStatus.ok,
         value: 'test-value',
@@ -119,7 +119,7 @@ void main() {
       );
 
       // Test SET command
-      final setCommand = Command(
+      const setCommand = Command(
         id: 'set-test',
         op: 'SET',
         key: 'test-key',
@@ -130,7 +130,7 @@ void main() {
       expect(setResponse.status, equals(ResponseStatus.ok));
 
       // Test GET command
-      final getCommand = Command(
+      const getCommand = Command(
         id: 'get-test',
         op: 'GET',
         key: 'test-key',
