@@ -427,7 +427,270 @@ jobs:
           retention-days: 7
 
   # ===========================================================================
-  # Job 3: Documentation Quality Assurance and Validation
+  # Job 3: Android Testing & Mobile Platform Validation
+  # ===========================================================================
+  #
+  # Android testing validates the mobile application deployment pipeline and
+  # end-to-end functionality on the target platform. This job builds the Flutter
+  # demo application, deploys it to an Android emulator, and executes comprehensive
+  # testing scenarios including MQTT connectivity, CRUD operations, and UI
+  # validation to ensure production readiness on mobile devices.
+  #
+  android-testing:
+    name: 📱 Android Testing & E2E Validation
+    runs-on: ubuntu-latest
+    needs: static-analysis
+    timeout-minutes: 45
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          
+      # -----------------------------------------------------------------------
+      # Java Development Kit Setup for Android Development
+      # -----------------------------------------------------------------------
+      # JDK 17 provides optimal compatibility with current Android toolchain
+      # while ensuring stable compilation and runtime characteristics for
+      # the Flutter build system and Android SDK operations.
+      #
+      - name: ☕ Setup Java Development Kit 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      # -----------------------------------------------------------------------
+      # Flutter SDK with Android Support
+      # -----------------------------------------------------------------------
+      # Flutter SDK includes comprehensive Android development toolchain with
+      # optimized Android SDK components and emulator management capabilities
+      #
+      - name: 🎯 Setup Flutter SDK with Android Support
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+          cache: true
+          
+      - name: 💾 Restore Dart Package Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+            **/.dart_tool/package_config.json
+          key: ${{ runner.os }}-dart-${{ hashFiles('**/pubspec.yaml', '**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-dart-
+            
+      # -----------------------------------------------------------------------
+      # Android SDK and Emulator Setup
+      # -----------------------------------------------------------------------
+      # Configures Android SDK with specific API level and system images
+      # optimized for CI environments with hardware acceleration where available
+      #
+      - name: 🤖 Setup Android SDK and Emulator
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: Galaxy Nexus
+          
+      - name: 🔧 Configure Android Environment
+        run: |
+          echo "Configuring Android development environment..."
+          
+          # Accept Android SDK licenses
+          yes | flutter doctor --android-licenses
+          
+          # Validate Android setup
+          flutter doctor -v
+          
+          # Configure environment variables
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          
+          # Verify Android tools
+          adb version
+          echo "✅ Android environment configured successfully"
+          
+      # -----------------------------------------------------------------------
+      # Project Dependencies and Bootstrap
+      # -----------------------------------------------------------------------
+      # Installs all project dependencies using Melos monorepo management
+      # with proper error handling for complex dependency chains
+      #
+      - name: 📦 Install Project Dependencies
+        run: |
+          dart pub global activate melos
+          
+          # Bootstrap packages with proper error handling
+          echo "Bootstrapping Dart packages..."
+          melos bootstrap --scope="packages/**" --verbose || true
+          
+          echo "Bootstrapping all packages..."
+          melos bootstrap --verbose
+          
+          echo "✅ Project dependencies installed successfully"
+          
+      # -----------------------------------------------------------------------
+      # Android Virtual Device Creation and Startup
+      # -----------------------------------------------------------------------
+      # Creates and launches Android emulator with optimized configuration
+      # for CI environments, including hardware acceleration and performance
+      # tuning for automated testing scenarios
+      #
+      - name: 🚀 Create and Launch Android Emulator
+        run: |
+          echo "Creating Android Virtual Device..."
+          
+          # Create AVD with CI-optimized configuration
+          echo no | avdmanager create avd \
+            -n test_device \
+            -k "system-images;android-34;google_apis;x86_64" \
+            --force
+            
+          # Start emulator in headless mode for CI
+          echo "Starting Android emulator..."
+          nohup $ANDROID_HOME/emulator/emulator \
+            -avd test_device \
+            -no-window \
+            -no-audio \
+            -no-snapshot \
+            -wipe-data \
+            -gpu swiftshader_indirect \
+            -memory 4096 \
+            -cores 2 &
+            
+          # Wait for emulator to be ready
+          echo "Waiting for emulator to boot..."
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\''\r'\'') ]]; do sleep 1; done'
+          
+          # Verify emulator is ready
+          adb devices
+          echo "✅ Android emulator ready for testing"
+          
+      # -----------------------------------------------------------------------
+      # Flutter Demo Application Build and Deployment
+      # -----------------------------------------------------------------------
+      # Builds the MerkleKV Flutter demo application and deploys it to the
+      # Android emulator for comprehensive end-to-end testing validation
+      #
+      - name: 🏗️ Build and Deploy Flutter Demo App
+        run: |
+          cd apps/flutter_demo
+          
+          echo "Building Flutter demo application..."
+          
+          # Clean previous builds
+          flutter clean
+          
+          # Get dependencies
+          flutter pub get
+          
+          # Build debug APK for testing
+          flutter build apk --debug
+          
+          # Install on emulator
+          adb install -r build/app/outputs/flutter-apk/app-debug.apk
+          
+          # Verify installation
+          if adb shell pm list packages | grep -q "com.example.flutter_demo_new"; then
+            echo "✅ Flutter demo app installed successfully"
+          else
+            echo "❌ Flutter demo app installation failed"
+            exit 1
+          fi
+          
+          cd ../..
+          
+      # -----------------------------------------------------------------------
+      # Comprehensive End-to-End Testing Execution
+      # -----------------------------------------------------------------------
+      # Executes the complete MerkleKV testing suite including MQTT connectivity,
+      # CRUD operations, UI validation, and performance verification to ensure
+      # production readiness of the mobile application
+      #
+      - name: 🧪 Execute Comprehensive E2E Test Suite
+        run: |
+          echo "Executing comprehensive end-to-end testing..."
+          
+          # Make test scripts executable
+          chmod +x final_validation_test.sh
+          chmod +x test_merkle_kv_manual.sh
+          
+          # Execute comprehensive validation
+          echo "Running comprehensive MerkleKV validation..."
+          if ./final_validation_test.sh; then
+            echo "✅ Comprehensive validation completed successfully"
+          else
+            echo "❌ Comprehensive validation failed"
+            exit 1
+          fi
+          
+          echo "✅ All Android end-to-end tests completed successfully"
+          
+      # -----------------------------------------------------------------------
+      # Test Artifacts and Evidence Collection
+      # -----------------------------------------------------------------------
+      # Collects screenshots, logs, and test reports for analysis and debugging
+      #
+      - name: 📊 Collect Test Artifacts and Evidence
+        if: always()
+        run: |
+          echo "Collecting Android test artifacts..."
+          
+          # Create artifacts directory
+          mkdir -p android-test-artifacts
+          
+          # Collect screenshots
+          find /tmp -name "*.png" -exec cp {} android-test-artifacts/ \; 2>/dev/null || true
+          
+          # Collect app logs
+          adb logcat -d | grep -i "flutter\|merkle" > android-test-artifacts/app-logs.txt || true
+          
+          # Collect system information
+          adb shell getprop > android-test-artifacts/device-properties.txt || true
+          adb shell dumpsys meminfo > android-test-artifacts/memory-info.txt || true
+          
+          # Collect emulator logs
+          find . -name "emulator.log" -exec cp {} android-test-artifacts/ \; 2>/dev/null || true
+          
+          echo "✅ Test artifacts collected"
+          
+      - name: 📤 Upload Android Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-artifacts
+          path: android-test-artifacts
+          retention-days: 7
+          
+      # -----------------------------------------------------------------------
+      # Cleanup and Resource Management
+      # -----------------------------------------------------------------------
+      # Ensures proper cleanup of emulator processes and system resources
+      #
+      - name: 🧹 Cleanup Android Resources
+        if: always()
+        run: |
+          echo "Cleaning up Android testing resources..."
+          
+          # Stop emulator gracefully
+          adb emu kill || true
+          
+          # Kill any remaining emulator processes
+          pkill -f emulator || true
+          
+          echo "✅ Android resources cleaned up"
+
+  # ===========================================================================
+  # Job 4: Documentation Quality Assurance and Validation
   # ===========================================================================
   #
   # Documentation quality directly correlates with software maintainability
@@ -607,7 +870,7 @@ jobs:
         continue-on-error: true  # API docs shouldn't block development
 
   # ===========================================================================
-  # Job 4: Release Management and Artifact Distribution
+  # Job 5: Release Management and Artifact Distribution
   # ===========================================================================
   #
   # Release management implements automated, reproducible software delivery
@@ -621,7 +884,7 @@ jobs:
     name: 🚀 Release Management & Distribution
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [static-analysis, comprehensive-testing, documentation-quality]
+    needs: [static-analysis, comprehensive-testing, android-testing, documentation-quality]
     timeout-minutes: 25
     
     # Elevated permissions for release operations
