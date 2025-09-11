@@ -110,11 +110,23 @@ jobs:
       # -----------------------------------------------------------------------
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          api-level: ${{ env.API_LEVEL }}
-          target: google_apis
-          arch: x86_64
-          profile: Galaxy Nexus
+        
+      - name: 🔧 Install Android System Images and Tools
+        run: |
+          echo "Installing Android SDK components..."
+          
+          # Accept all licenses first
+          yes | sdkmanager --licenses
+          
+          # Install required SDK components
+          sdkmanager "platforms;android-${{ env.API_LEVEL }}"
+          sdkmanager "build-tools;34.0.0"
+          sdkmanager "platform-tools"
+          sdkmanager "emulator"
+          sdkmanager "system-images;android-${{ env.API_LEVEL }};google_apis;x86_64"
+          
+          # Verify installations
+          sdkmanager --list_installed | grep -E "(platforms|build-tools|system-images)"
           
       - name: 🔧 Configure Android Environment
         run: |
@@ -157,12 +169,18 @@ jobs:
         run: |
           echo "Setting up Android Virtual Device..."
           
+          # List available system images to verify installation
+          avdmanager list target
+          
           # Create AVD with specific configuration
           echo no | avdmanager create avd \
             -n merkle_test_device \
             -k "system-images;android-${{ env.API_LEVEL }};google_apis;x86_64" \
             --force
             
+          # Verify AVD creation
+          avdmanager list avd
+          
           # Configure AVD for CI optimization
           cat >> ~/.android/avd/merkle_test_device.avd/config.ini << EOF
           hw.keyboard=yes
@@ -183,7 +201,10 @@ jobs:
             -memory 4096 \
             -cores 2 \
             -netdelay none \
-            -netspeed full &
+            -netspeed full \
+            -no-boot-anim \
+            -camera-back none \
+            -camera-front none &
             
           # Wait for emulator to be ready with timeout
           echo "Waiting for emulator to boot (timeout: 10 minutes)..."
