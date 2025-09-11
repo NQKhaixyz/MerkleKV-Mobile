@@ -440,7 +440,7 @@ jobs:
     name: 📱 Android Testing & E2E Validation
     runs-on: ubuntu-latest
     needs: static-analysis
-    timeout-minutes: 45
+    timeout-minutes: 90
     if: github.event_name == 'pull_request' || github.event.inputs.skip_tests != 'true'
     
     steps:
@@ -526,6 +526,7 @@ jobs:
           # Configure environment variables
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_EMULATOR_USE_SYSTEM_LIBS=1" >> $GITHUB_ENV
           
           # Verify Android tools
           adb version
@@ -573,7 +574,7 @@ jobs:
           # Verify AVD creation
           avdmanager list avd
           
-          # Start emulator in headless mode for CI
+          # Start emulator in headless mode for CI with software rendering
           echo "Starting Android emulator..."
           nohup $ANDROID_HOME/emulator/emulator \
             -avd test_device \
@@ -582,23 +583,34 @@ jobs:
             -no-snapshot \
             -wipe-data \
             -gpu swiftshader_indirect \
+            -no-accel \
             -memory 4096 \
             -cores 2 \
             -no-boot-anim \
             -camera-back none \
-            -camera-front none &
+            -camera-front none \
+            -qemu -m 4096 &
             
-          # Wait for emulator to be ready
-          echo "Waiting for emulator to boot (timeout: 10 minutes)..."
+          # Wait for emulator to be ready with extended timeout for software rendering
+          echo "Waiting for emulator to boot (timeout: 15 minutes)..."
           
-          # Wait for device to be connected
-          timeout 300 adb wait-for-device
+          # Wait for device to be connected with extended timeout
+          if ! timeout 600 adb wait-for-device; then
+            echo "❌ Emulator failed to start within timeout"
+            adb devices
+            ps aux | grep emulator || true
+            exit 1
+          fi
           
-          # Wait for boot to complete
-          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\\r")" == "1" ]]; do sleep 2; done'
+          # Wait for boot to complete with extended timeout
+          if ! timeout 600 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\\r")" == "1" ]]; do echo "Waiting for boot..."; sleep 5; done'; then
+            echo "❌ Emulator failed to boot within timeout"
+            adb shell getprop || true
+            exit 1
+          fi
           
           # Additional wait for system to stabilize
-          sleep 10
+          sleep 15
           
           # Verify emulator is ready
           adb devices
