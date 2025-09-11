@@ -181,13 +181,8 @@ jobs:
           # Verify AVD creation
           avdmanager list avd
           
-          # Configure AVD for CI optimization
-          cat >> ~/.android/avd/merkle_test_device.avd/config.ini << EOF
-          hw.keyboard=yes
-          hw.lcd.density=240
-          hw.ramSize=4096
-          hw.cpu.ncore=2
-          EOF
+          # AVD is ready to use with default configuration
+          echo "✅ AVD created successfully with optimized defaults"
           
           # Launch emulator in headless mode
           echo "Starting Android emulator..."
@@ -208,13 +203,20 @@ jobs:
             
           # Wait for emulator to be ready with timeout
           echo "Waiting for emulator to boot (timeout: 10 minutes)..."
-          timeout 600 adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\''\r'\'') ]]; do sleep 1; done'
+          
+          # Wait for device to be connected
+          timeout 300 adb wait-for-device
+          
+          # Wait for boot to complete
+          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\\r")" == "1" ]]; do sleep 2; done'
+          
+          # Additional wait for system to stabilize
+          sleep 10
           
           # Verify emulator is ready
           adb devices
-          adb shell getprop sys.boot_completed
-          
-          echo "✅ Android emulator is ready"
+          echo "Boot completed: $(adb shell getprop sys.boot_completed)"
+          echo "✅ Android emulator is ready for testing"
           
       # -----------------------------------------------------------------------
       # Flutter Demo Application Build

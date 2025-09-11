@@ -589,11 +589,20 @@ jobs:
             -camera-front none &
             
           # Wait for emulator to be ready
-          echo "Waiting for emulator to boot..."
-          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\''\r'\'') ]]; do sleep 1; done'
+          echo "Waiting for emulator to boot (timeout: 10 minutes)..."
+          
+          # Wait for device to be connected
+          timeout 300 adb wait-for-device
+          
+          # Wait for boot to complete
+          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\\r")" == "1" ]]; do sleep 2; done'
+          
+          # Additional wait for system to stabilize
+          sleep 10
           
           # Verify emulator is ready
           adb devices
+          echo "Boot completed: $(adb shell getprop sys.boot_completed)"
           echo "✅ Android emulator ready for testing"
           
       # -----------------------------------------------------------------------
