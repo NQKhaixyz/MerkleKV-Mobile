@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +63,7 @@ class _MerkleKVDemoState extends State<MerkleKVDemo> {
   }
 
   void _generateIds() {
-    final uuid = const Uuid();
+    const uuid = Uuid();
     _clientId = 'flutter-${uuid.v4().substring(0, 8)}';
     _nodeId = 'node-${uuid.v4().substring(0, 8)}';
   }
