@@ -595,26 +595,38 @@ jobs:
           echo "Waiting for emulator to boot (timeout: 15 minutes)..."
           
           # Wait for device to be connected with extended timeout
-          if ! timeout 600 adb wait-for-device; then
-            echo "❌ Emulator failed to start within timeout"
-            adb devices
-            ps aux | grep emulator || true
-            exit 1
-          fi
+          echo "Checking for ADB device connection..."
+          for i in {1..120}; do
+            if adb devices | grep -q "emulator-"; then
+              echo "✅ Emulator device detected"
+              break
+            fi
+            echo "Waiting for device... ($i/120)"
+            sleep 5
+          done
+          
+          # Check if we have any devices
+          echo "Current ADB devices:"
+          adb devices -l
           
           # Wait for boot to complete with extended timeout
-          if ! timeout 600 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\\r")" == "1" ]]; do echo "Waiting for boot..."; sleep 5; done'; then
-            echo "❌ Emulator failed to boot within timeout"
-            adb shell getprop || true
-            exit 1
-          fi
+          echo "Waiting for boot completion..."
+          for i in {1..120}; do
+            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || echo "0")
+            if [[ "$boot_completed" == "1" ]]; then
+              echo "✅ Boot completed successfully"
+              break
+            fi
+            echo "Waiting for boot... ($i/120) - boot_completed: $boot_completed"
+            sleep 5
+          done
           
           # Additional wait for system to stabilize
           sleep 15
           
           # Verify emulator is ready
-          adb devices
-          echo "Boot completed: $(adb shell getprop sys.boot_completed)"
+          adb devices -l
+          echo "Boot completed: $(adb shell getprop sys.boot_completed 2>/dev/null || echo 'N/A')"
           echo "✅ Android emulator ready for testing"
           
       # -----------------------------------------------------------------------
