@@ -73,6 +73,7 @@ if command -v melos &> /dev/null; then
 else
     warning "Melos not found, installing..."
     dart pub global activate melos
+    export PATH="$PATH:$HOME/.pub-cache/bin"
     melos bootstrap
 fi
 
