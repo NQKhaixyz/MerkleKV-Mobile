@@ -567,7 +567,7 @@ jobs:
           
           # Create AVD with CI-optimized configuration
           echo no | avdmanager create avd \
-            -n test_device \
+            -n merkle_test_device \
             -k "system-images;android-34;google_apis;x86_64" \
             --force
             
@@ -577,7 +577,7 @@ jobs:
           # Start emulator in headless mode for CI with software rendering
           echo "Starting Android emulator..."
           nohup $ANDROID_HOME/emulator/emulator \
-            -avd test_device \
+            -avd merkle_test_device \
             -no-window \
             -no-audio \
             -no-snapshot \

@@ -6,60 +6,59 @@ import 'package:flutter_demo/main.dart' as app;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('MerkleKV Mobile End-to-End Tests', () {
+  group('MerkleKV Mobile Demo Tests', () {
     testWidgets('App launches and displays main UI', (WidgetTester tester) async {
       // Launch the app
       app.main();
       await tester.pumpAndSettle();
 
-      // Verify main UI elements are present
+      // Verify main UI elements for simplified counter app
       expect(find.text('MerkleKV Mobile Demo'), findsOneWidget);
-      expect(find.text('Connection'), findsOneWidget);
-      expect(find.text('Operations'), findsOneWidget);
-      expect(find.text('Last Operation'), findsOneWidget);
-      expect(find.text('Stored Data'), findsOneWidget);
-      
-      // Verify connection controls
-      expect(find.text('Connect'), findsOneWidget);
-      expect(find.text('Disconnect'), findsOneWidget);
-      expect(find.text('Status: Disconnected'), findsOneWidget);
-      
-      // Verify operation buttons
-      expect(find.text('GET'), findsOneWidget);
-      expect(find.text('SET'), findsOneWidget);
-      expect(find.text('DELETE'), findsOneWidget);
-      expect(find.text('KEYS'), findsOneWidget);
+      expect(find.text('You have pushed the button this many times:'), findsOneWidget);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('Connection UI works correctly', (WidgetTester tester) async {
+    testWidgets('Counter increment works correctly', (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Find and interact with broker input field
-      final brokerField = find.byWidgetPredicate(
-        (widget) => widget is TextField && 
-                   widget.decoration?.labelText == 'MQTT Broker'
-      );
-      expect(brokerField, findsOneWidget);
-      
-      // Clear and enter new broker
-      await tester.tap(brokerField);
-      await tester.pumpAndSettle();
-      await tester.enterText(brokerField, 'broker.hivemq.com');
+      // Verify initial counter state
+      expect(find.text('0'), findsOneWidget);
+
+      // Tap the increment button
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      // Find port field and update it
-      final portField = find.byWidgetPredicate(
-        (widget) => widget is TextField && 
-                   widget.decoration?.labelText == 'Port'
-      );
-      expect(portField, findsOneWidget);
-      
-      await tester.tap(portField);
+      // Verify counter incremented
+      expect(find.text('0'), findsNothing);
+      expect(find.text('1'), findsOneWidget);
+
+      // Tap again
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
-      await tester.enterText(portField, '1883');
-      await tester.pumpAndSettle();
+
+      // Verify counter incremented again
+      expect(find.text('2'), findsOneWidget);
     });
+
+    testWidgets('UI elements are properly displayed', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      // Verify AppBar
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.text('MerkleKV Mobile Demo'), findsOneWidget);
+      
+      // Verify main content
+      expect(find.byType(Column), findsWidgets);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      
+      // Verify text styling
+      expect(find.text('You have pushed the button this many times:'), findsOneWidget);
+    });
+  });
+}
 
     testWidgets('Operation fields can be filled', (WidgetTester tester) async {
       app.main();
