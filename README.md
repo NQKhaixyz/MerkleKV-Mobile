@@ -1,8 +1,41 @@
 # MerkleKV Mobile
 
-> **🚀 Ready to Start?** Check out our [**Complete Tutorial**](TUTORIAL.md) for step-by-step setup and testing!
-
 A distributed key-value store optimized for mobile edge devices with MQTT-based communication and replication.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Flutter SDK 3.10.0+, Dart SDK 3.0.0+
+- Android Studio with Android SDK
+- Java Development Kit (JDK) 11 or 17
+
+### Setup & Run (5 Minutes)
+```bash
+# 1. Clone and setup
+git clone https://github.com/AI-Decenter/MerkleKV-Mobile.git
+cd MerkleKV-Mobile
+dart pub global activate melos
+melos bootstrap
+
+# 2. Android Testing
+./test_android_local.sh
+
+# 3. Run Flutter Demo
+cd apps/flutter_demo
+flutter run
+```
+
+### Local Testing
+```bash
+# Quick Android build test
+./test_android_local.sh
+
+# Comprehensive E2E testing  
+./final_validation_test.sh
+
+# Manual UI testing
+./test_merkle_kv_manual.sh
+```
 
 ## 📋 Table of Contents
 
@@ -739,77 +772,31 @@ void main() async {
 
 ## 🧪 Testing Strategy
 
-The MerkleKV Mobile project implements a comprehensive testing strategy covering multiple levels:
-
-### 1. Unit Testing
-- **Core Components**: Individual component isolation testing
-- **Mock-based Testing**: MQTT communication mocking
-- **Business Logic**: Key-value operations and conflict resolution
-
-### 2. Integration Testing 
-- **Real MQTT Brokers**: Live broker connectivity testing
-- **Cross-component**: End-to-end data flow validation
-- **Network Resilience**: Connection failure and recovery
-
-### 3. Android Platform Testing
-- **Automated CI/CD**: GitHub Actions with Android emulator
-- **Local Testing**: `./test_android_local.sh` for development
-- **End-to-End Validation**: Complete mobile app testing
-- **Performance Testing**: Memory, CPU, and network monitoring
-
-### 4. Flutter Integration Testing
-- **Widget Testing**: UI component validation
-- **Integration Tests**: App-level behavior testing
-- **Platform Integration**: Native Android functionality
+### Test Types
+- **Unit Tests**: Core component isolation testing
+- **Integration Tests**: MQTT communication and cross-component validation
+- **Android Tests**: Automated CI/CD with emulator and local development
+- **Flutter Tests**: Widget and app-level behavior testing
 
 ### Running Tests
-
-#### Local Development
 ```bash
 # Quick Android build test
 ./test_android_local.sh
 
-# Comprehensive E2E testing (requires emulator)
+# Comprehensive E2E testing
 ./final_validation_test.sh
 
 # Manual UI testing
 ./test_merkle_kv_manual.sh
+
+# Integration tests (requires MQTT broker)
+dart test -t integration --timeout=90s
 ```
 
-#### CI/CD Workflows
-- **Main Pipeline**: `.github/workflows/full_ci.yml` - Complete testing including Android
-- **Android Specific**: `.github/workflows/android-testing.yml` - Dedicated Android testing
-- **Quick Tests**: `.github/workflows/test.yml` - Fast unit and integration tests
-
-#### Integration Tests (MQTT broker required)
-
-- Start a local broker (Docker):
-  ```bash
-  docker run -d --rm --name mosquitto -p 1883:1883 eclipse-mosquitto:2
-  ```
-
-- Environment (defaults):
-  ```bash
-  export MQTT_HOST=127.0.0.1
-  export MQTT_PORT=1883
-  ```
-
-- Execute tests:
-  ```bash
-  dart test -t integration --timeout=90s
-  ```
-
-- Enforce broker requirement (CI or strict local runs):
-  ```bash
-  IT_REQUIRE_BROKER=1 dart test -t integration --timeout=90s
-  ```
-
-- Stop the broker:
-  ```bash
-  docker stop mosquitto
-  ```
-
-Integration tests skip cleanly when no usable broker is present, unless `IT_REQUIRE_BROKER=1` is set, in which case they fail early by design.
+### CI/CD Workflows
+- **Full Pipeline**: `.github/workflows/full_ci.yml` - Complete testing including Android
+- **Android Testing**: `.github/workflows/android-testing.yml` - Dedicated mobile testing
+- **Quick Tests**: `.github/workflows/test.yml` - Fast validation
 
 ## 📊 Performance Considerations
 
@@ -837,7 +824,7 @@ Integration tests skip cleanly when no usable broker is present, unless `IT_REQU
 
 ### Quick Start Guide
 
-**📖 [Complete Tutorial Available](TUTORIAL.md)** - Follow our comprehensive step-by-step guide for full setup and testing.
+**📖 Quick Start Guide Available Above** - Follow our setup instructions for immediate testing.
 
 #### Prerequisites
 
@@ -880,8 +867,8 @@ adb shell am start -n com.example.flutter_demo_new/.MainActivity
 
 ### Quick Access Guides
 
-- 📖 **[Complete Tutorial](TUTORIAL.md)** - Step-by-step setup and testing guide
-- 🏃 **[Running Guide](RUNNING.md)** - Detailed instructions for all platforms
+- 📖 **Quick Start** - Setup and testing guide above
+- 🔧 **Testing Scripts** - Local development and validation tools
 - 📊 **[Test Report](END_TO_END_TEST_REPORT.md)** - Comprehensive testing results
 - 🏗️ **[Architecture](docs/architecture.md)** - System design and components
 - 🔄 **[Replication](docs/replication/cbor.md)** - CBOR serialization details
@@ -1092,9 +1079,9 @@ MerkleKV-Mobile/
 │   └── dev/                     # Development automation
 ├── docs/                        # Technical documentation
 ├── .github/workflows/           # CI/CD automation
-├── TUTORIAL.md                  # Complete setup guide
-├── final_validation_test.sh     # End-to-end testing script
-└── test_merkle_kv_manual.sh     # Manual testing utilities
+├── final_validation_test.sh     # Comprehensive E2E testing
+├── test_android_local.sh        # Local Android testing
+└── test_merkle_kv_manual.sh     # Manual UI testing
 ```
 
 ### Development Commands
