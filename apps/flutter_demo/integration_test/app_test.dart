@@ -57,124 +57,48 @@ void main() {
       // Verify text styling
       expect(find.text('You have pushed the button this many times:'), findsOneWidget);
     });
-  });
-}
 
-    testWidgets('Operation fields can be filled', (WidgetTester tester) async {
+    testWidgets('Counter can be incremented multiple times', (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Find key field
-      final keyField = find.byWidgetPredicate(
-        (widget) => widget is TextField && 
-                   widget.decoration?.labelText == 'Key'
-      );
-      expect(keyField, findsOneWidget);
+      final incrementButton = find.byIcon(Icons.add);
       
-      await tester.tap(keyField);
-      await tester.pumpAndSettle();
-      await tester.enterText(keyField, 'test_key');
-      await tester.pumpAndSettle();
-
-      // Find value field
-      final valueField = find.byWidgetPredicate(
-        (widget) => widget is TextField && 
-                   widget.decoration?.labelText == 'Value'
-      );
-      expect(valueField, findsOneWidget);
-      
-      await tester.tap(valueField);
-      await tester.pumpAndSettle();
-      await tester.enterText(valueField, 'test_value');
-      await tester.pumpAndSettle();
+      // Test multiple increments
+      for (int i = 1; i <= 5; i++) {
+        await tester.tap(incrementButton);
+        await tester.pumpAndSettle();
+        expect(find.text(i.toString()), findsOneWidget);
+      }
     });
 
-    testWidgets('Operation buttons are disabled when disconnected', (WidgetTester tester) async {
+    testWidgets('App theme and styling works', (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Find operation buttons
-      final getButton = find.ancestor(
-        of: find.text('GET'),
-        matching: find.byType(ElevatedButton),
-      );
-      final setButton = find.ancestor(
-        of: find.text('SET'),
-        matching: find.byType(ElevatedButton),
-      );
-      final deleteButton = find.ancestor(
-        of: find.text('DELETE'),
-        matching: find.byType(ElevatedButton),
-      );
-      final keysButton = find.ancestor(
-        of: find.text('KEYS'),
-        matching: find.byType(ElevatedButton),
-      );
-
-      // Verify buttons exist
-      expect(getButton, findsOneWidget);
-      expect(setButton, findsOneWidget);
-      expect(deleteButton, findsOneWidget);
-      expect(keysButton, findsOneWidget);
-
-      // Operation buttons should be disabled when disconnected
-      final getButtonWidget = tester.widget<ElevatedButton>(getButton);
-      final setButtonWidget = tester.widget<ElevatedButton>(setButton);
-      final deleteButtonWidget = tester.widget<ElevatedButton>(deleteButton);
-      final keysButtonWidget = tester.widget<ElevatedButton>(keysButton);
-
-      expect(getButtonWidget.onPressed, isNull);
-      expect(setButtonWidget.onPressed, isNull);
-      expect(deleteButtonWidget.onPressed, isNull);
-      expect(keysButtonWidget.onPressed, isNull);
+      // Verify theme elements
+      expect(find.byType(MaterialApp), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+      
+      // Verify Material 3 components are present
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(appBar.title, isA<Text>());
+      
+      // Verify FloatingActionButton has correct icon
+      final fab = tester.widget<FloatingActionButton>(find.byType(FloatingActionButton));
+      expect(fab.child, isA<Icon>());
     });
 
-    testWidgets('Connection attempt with public broker', (WidgetTester tester) async {
+    testWidgets('Screen structure is correct', (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Set broker to a public one
-      final brokerField = find.byWidgetPredicate(
-        (widget) => widget is TextField && 
-                   widget.decoration?.labelText == 'MQTT Broker'
-      );
+      // Verify the main structure
+      expect(find.byType(Center), findsWidgets);
+      expect(find.byType(Column), findsWidgets);
       
-      await tester.tap(brokerField);
-      await tester.pumpAndSettle();
-      await tester.enterText(brokerField, 'broker.hivemq.com');
-      await tester.pumpAndSettle();
-
-      // Try to connect
-      final connectButton = find.ancestor(
-        of: find.text('Connect'),
-        matching: find.byType(ElevatedButton),
-      );
-      
-      await tester.tap(connectButton);
-      await tester.pumpAndSettle();
-      
-      // Wait a bit for connection attempt
-      await tester.pump(const Duration(seconds: 3));
-      
-      // Check if status changed (connection may succeed or fail, both are valid for testing)
-      // We just want to ensure the UI responds to connection attempts
-      final statusText = find.textContaining('Status:');
-      expect(statusText, findsOneWidget);
-    });
-
-    testWidgets('Refresh data button works', (WidgetTester tester) async {
-      app.main();
-      await tester.pumpAndSettle();
-
-      // Find refresh button
-      final refreshButton = find.text('Refresh');
-      expect(refreshButton, findsOneWidget);
-      
-      // Tap refresh button
-      await tester.tap(refreshButton);
-      await tester.pumpAndSettle();
-      
-      // Should complete without errors
+      // Verify we have the right number of text widgets
+      expect(find.byType(Text), findsAtLeastNWidgets(3)); // Title, counter label, counter value
     });
   });
 }
