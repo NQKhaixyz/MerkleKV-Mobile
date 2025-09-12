@@ -14,6 +14,7 @@ void main() {
 
       // Verify main UI elements for simplified counter app
       expect(find.text('MerkleKV Mobile Demo'), findsOneWidget);
+      expect(find.text('MerkleKV Mobile Demo App'), findsOneWidget);
       expect(find.text('You have pushed the button this many times:'), findsOneWidget);
       expect(find.text('0'), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
