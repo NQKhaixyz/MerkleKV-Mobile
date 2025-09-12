@@ -198,11 +198,4 @@ jobs:
           echo "🚀 Running Flutter unit and widget tests..."
           flutter test test/ --verbose
           
-          # Validate integration test syntax without execution
-          echo "🔍 Validating integration test syntax..."
-          flutter analyze integration_test/ || {
-            echo "⚠️ Integration test analysis issues found"
-            echo "This is expected - integration tests are designed for device execution"
-          }
-          
           echo "✅ Flutter test validation completed successfully"

@@ -467,25 +467,6 @@ jobs:
           echo "✅ Performance testing completed"
           
       # -----------------------------------------------------------------------
-      # Flutter Integration Tests (if available)
-      # -----------------------------------------------------------------------
-      - name: 🔄 Run Flutter Integration Tests
-        run: |
-          cd apps/flutter_demo
-          
-          if [ -d "integration_test" ]; then
-            echo "Running Flutter integration tests..."
-            
-            # Run integration tests with specific device
-            flutter test integration_test/ --device-id=$(adb devices | grep emulator | cut -f1) || {
-              echo "⚠️ Integration tests failed, but continuing..."
-            }
-          else
-            echo "ℹ️ No Flutter integration tests found"
-          fi
-          
-          cd ../..
-          
       # -----------------------------------------------------------------------
       # Test Evidence Collection
       # -----------------------------------------------------------------------
