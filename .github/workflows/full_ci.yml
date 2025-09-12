@@ -520,13 +520,27 @@ jobs:
           # Accept Android SDK licenses
           yes | flutter doctor --android-licenses
           
-          # Validate Android setup
-          flutter doctor -v
-          
-          # Configure environment variables
+          # Configure environment variables with explicit paths
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_AVD_HOME=$HOME/.android/avd" >> $GITHUB_ENV
           echo "ANDROID_EMULATOR_USE_SYSTEM_LIBS=1" >> $GITHUB_ENV
+          
+          # Create Android directories with proper permissions
+          mkdir -p $HOME/.android/avd
+          mkdir -p $HOME/.android
+          chmod -R 755 $HOME/.android
+          
+          # Set proper AVD home for current session
+          export ANDROID_AVD_HOME=$HOME/.android/avd
+          
+          # Debug environment
+          echo "Environment variables set:"
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "ANDROID_AVD_HOME: $HOME/.android/avd"
+          
+          # Validate Android setup
+          flutter doctor -v
           
           # Verify Android tools
           adb version
@@ -562,17 +576,49 @@ jobs:
         run: |
           echo "Setting up Android Virtual Device..."
           
+          # Debug environment setup
+          echo "Environment debug info:"
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "ANDROID_AVD_HOME: $ANDROID_AVD_HOME"
+          echo "HOME: $HOME"
+          
+          # Ensure AVD directories exist with proper permissions
+          mkdir -p $HOME/.android/avd
+          chmod 755 $HOME/.android/avd
+          
           # List available system images to verify installation
+          echo "Available targets:"
           avdmanager list target
           
-          # Create AVD with CI-optimized configuration
+          # List available system images
+          echo "Available system images:"
+          avdmanager list
+          
+          # Create AVD with explicit path and configuration
+          echo "Creating AVD..."
           echo no | avdmanager create avd \
             -n merkle_test_device \
             -k "system-images;android-34;google_apis;x86_64" \
+            -c 2048M \
             --force
             
-          # Verify AVD creation
+          # Debug AVD creation
+          echo "AVD creation result:"
+          ls -la $HOME/.android/avd/ || echo "AVD directory not found"
+          
+          # Verify AVD creation with detailed output
+          echo "Listing all AVDs:"
           avdmanager list avd
+          
+          # Check for specific AVD
+          if avdmanager list avd | grep -q "merkle_test_device"; then
+            echo "✅ AVD created successfully"
+          else
+            echo "❌ AVD creation failed"
+            echo "Debug: AVD directory contents:"
+            ls -la $HOME/.android/avd/ || echo "No AVD directory"
+            exit 1
+          fi
           
           # Start emulator in headless mode for CI with software rendering
           echo "Starting Android emulator..."
