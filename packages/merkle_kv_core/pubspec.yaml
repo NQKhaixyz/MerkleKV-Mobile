@@ -13,7 +13,9 @@ dependencies:
   path: ^1.8.3
 
 dev_dependencies:
-  test: ^1.26.3
+  # CI environment currently uses Dart 3.2.x; test ^1.26.3 requires >=3.5.0.
+  # Downgraded to last version compatible with 3.2 to restore bootstrap.
+  test: ^1.25.7
   mockito: ^5.4.4
   mocktail: ^1.0.3
   build_runner: ^2.4.8
