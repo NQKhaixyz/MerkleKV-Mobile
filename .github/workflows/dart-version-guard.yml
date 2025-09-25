@@ -1,0 +1,26 @@
+name: Dart SDK Version Guard
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
+      - fix/**
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Dart (stable)
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Show Dart version
+        run: dart --version
+      - name: Enforce Dart version range
+        run: |
+          chmod +x scripts/ci/check_dart_sdk.sh
+          scripts/ci/check_dart_sdk.sh

@@ -1,5 +1,8 @@
 # MerkleKV Mobile
 
+![Dart Version Guard](https://github.com/AI-Decenter/MerkleKV-Mobile/actions/workflows/dart-version-guard.yml/badge.svg)
+![Core Feature Tests](https://github.com/AI-Decenter/MerkleKV-Mobile/actions/workflows/merkle-kv-core-feature-tests.yml/badge.svg)
+
 A distributed key-value store optimized for mobile edge devices with MQTT-based communication and real-time synchronization.
 
 ## 🚀 Quick Start
