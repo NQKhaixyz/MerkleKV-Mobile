@@ -1,52 +1,44 @@
-# Windows single-file EXE (SFX)
+# Windows portable EXE packaging
 
-This folder contains scripts to package the Flutter Windows app into a single self-extracting EXE (SFX). When users run the EXE, it extracts to a temp folder and launches the app immediately.
+This folder contains `make-sfx.ps1`, a PowerShell script that packages the Flutter Windows app into a single self-extracting EXE. Users can double‑click the EXE to run the app immediately (no installer).
 
-Why SFX? Flutter for Windows requires multiple DLLs and assets next to the executable, so a true single binary is not supported. The SFX approach provides a practical one-file distribution.
+## Prerequisites (local Windows machine)
+- Windows 10/11 x64
+- Visual Studio 2022 with the "Desktop development with C++" workload (required by Flutter for Windows)
+- Flutter SDK (stable channel) and Dart
+- 7‑Zip installed (provides `7z.exe` and `7zsd.sfx`)
+  - Recommended: `choco install 7zip`
 
-## Prerequisites (on the build machine)
+## Build and package
 
-- Windows 10/11
-- Visual Studio with "Desktop development with C++"
-- Flutter SDK (Windows desktop enabled)
-- 7-Zip (for 7z and 7zS.sfx)
-
-## Output
-
-- apps/flutter_demo/releases/MerkleKV-Mobile.exe (default)
-
-## Usage
-
-PowerShell:
+Run in PowerShell from the repository root (on Windows only):
 
 ```
-# From repo root
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 ./scripts/windows/make-sfx.ps1
-
-# Custom output and custom SFX stub
-./scripts/windows/make-sfx.ps1 -Output C:\dist\MerkleKV-Mobile.exe -SevenZipSfx "C:\\Program Files\\7-Zip\\7zS.sfx"
 ```
 
-CMD:
+Outputs a single EXE under:
 
 ```
-REM From repo root
-scripts\windows\make-sfx.cmd
-
-REM Custom output and SFX stub
-scripts\windows\make-sfx.cmd C:\dist\MerkleKV-Mobile.exe "C:\\Program Files\\7-Zip\\7zS.sfx"
+apps/flutter_demo/releases/windows/<name>-<version>-windows-x64-portable.exe
 ```
 
-## What the script does
+If bạn đang ở Linux/macOS, hãy dùng CI workflow thay vì chạy script trực tiếp. Vào GitHub → Actions → chạy workflow `windows-portable` và tải artifact EXE.
 
-1. Builds the Flutter Windows app in `apps/flutter_demo`
-2. Finds the Release output in `build/windows/x64/runner/Release`
-3. Creates a 7z archive of the Release folder
-4. Generates an SFX config to auto-run `flutter_demo.exe`
-5. Concatenates `7zS.sfx + config.txt + payload.7z` into a single EXE
+Use `-SkipBuild` to package an existing build (Windows):
+
+```
+./scripts/windows/make-sfx.ps1 -SkipBuild
+```
+
+Use `-ProjectDir` to target a different Flutter app directory (must contain `pubspec.yaml`):
+
+```
+./scripts/windows/make-sfx.ps1 -ProjectDir .\apps\flutter_demo
+```
 
 ## Notes
-
-- Code signing is recommended to avoid SmartScreen warnings.
-- If your CPU arch differs (e.g., arm64), adjust the Release path in the script.
-- To change the window title and file properties, edit `apps/flutter_demo/windows/runner/Runner.rc` and CMake settings (`BINARY_NAME`).
+- The EXE extracts to a temporary folder and launches the app, then cleans up after exit.
+- If `7z.exe` or `7zsd.sfx/7z.sfx` is not found, install 7‑Zip and re-run.
+- For CI builds, see `.github/workflows/windows-portable.yml`, which produces an artifact automatically.
