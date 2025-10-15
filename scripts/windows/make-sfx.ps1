@@ -42,7 +42,17 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Ensure we're on Windows, as Flutter Windows build requires Windows toolchain
-if ($PSVersionTable.PSPlatform -ne 'Win32NT' -and -not $IsWindows) {
+$onWindows = $false
+if ($PSBoundParameters.ContainsKey('IsWindows')) { $onWindows = $IsWindows }
+elseif ($null -ne (Get-Variable -Name IsWindows -Scope Script,Global -ErrorAction SilentlyContinue)) { $onWindows = $IsWindows }
+else {
+	try {
+		$onWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
+	} catch {
+		$onWindows = ($env:OS -like '*Windows*')
+	}
+}
+if (-not $onWindows) {
 	Write-Error "This script builds a Windows desktop app and must be run on Windows.\nOptions:\n - Run on a Windows 10/11 machine with Flutter + Visual Studio installed.\n - Or trigger CI workflow .github/workflows/windows-portable.yml to build on Windows runner."
 	exit 1
 }
