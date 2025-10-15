@@ -159,7 +159,7 @@ if (-not (Test-Path $releaseDir)) {
 }
 
 # Determine the app EXE name
-$exeCandidates = Get-ChildItem -Path $releaseDir -Filter '*.exe' -File | Where-Object { $_.Name -notmatch 'flutter_tester|unittests' }
+$exeCandidates = @(Get-ChildItem -Path $releaseDir -Filter '*.exe' -File | Where-Object { $_.Name -notmatch 'flutter_tester|unittests' })
 if ($exeCandidates.Count -eq 0) {
 	Write-Err "No application .exe found in $releaseDir"
 	exit 1
