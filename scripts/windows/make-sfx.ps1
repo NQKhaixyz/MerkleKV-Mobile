@@ -33,8 +33,9 @@
 
 [CmdletBinding()]
 param(
-	[string]$ProjectDir = (Join-Path $PSScriptRoot '..' '..' 'apps' 'flutter_demo'),
+	[string]$ProjectDir = $null,
 	[string]$OutputDir = $null,
+	[Alias('Output')][string]$Output = $null,
 	[switch]$SkipBuild
 )
 
@@ -43,14 +44,14 @@ $ErrorActionPreference = 'Stop'
 
 # Ensure we're on Windows, as Flutter Windows build requires Windows toolchain
 $onWindows = $false
-if ($PSBoundParameters.ContainsKey('IsWindows')) { $onWindows = $IsWindows }
-elseif ($null -ne (Get-Variable -Name IsWindows -Scope Script,Global -ErrorAction SilentlyContinue)) { $onWindows = $IsWindows }
-else {
-	try {
+try {
+	if (Get-Variable -Name IsWindows -ErrorAction SilentlyContinue) {
+		$onWindows = [bool]$IsWindows
+	} else {
 		$onWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
-	} catch {
-		$onWindows = ($env:OS -like '*Windows*')
 	}
+} catch {
+	$onWindows = ($env:OS -like '*Windows*')
 }
 if (-not $onWindows) {
 	Write-Error "This script builds a Windows desktop app and must be run on Windows.\nOptions:\n - Run on a Windows 10/11 machine with Flutter + Visual Studio installed.\n - Or trigger CI workflow .github/workflows/windows-portable.yml to build on Windows runner."
@@ -64,9 +65,9 @@ function Write-Err($msg)  { Write-Error $msg }
 function Resolve-SevenZip() {
 	# Try common locations and PATH
 	$candidates = @()
-	if ($env:ProgramFiles)        { $candidates += Join-Path $env:ProgramFiles '7-Zip\7z.exe' }
-	if ($env:ProgramW6432)        { $candidates += Join-Path $env:ProgramW6432 '7-Zip\7z.exe' }
-	if (${env:ProgramFiles(x86)}) { $candidates += Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe' }
+	if ($env:ProgramFiles)        { $candidates += (Join-Path -Path $env:ProgramFiles        -ChildPath '7-Zip\7z.exe') }
+	if ($env:ProgramW6432)        { $candidates += (Join-Path -Path $env:ProgramW6432        -ChildPath '7-Zip\7z.exe') }
+	if (${env:ProgramFiles(x86)}) { $candidates += (Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath '7-Zip\7z.exe') }
 	$candidates += '7z.exe'
 
 	foreach ($p in $candidates) {
@@ -108,8 +109,18 @@ function Ensure-Dir([string]$dir) {
 	if (-not (Test-Path $dir)) { [void](New-Item -ItemType Directory -Path $dir) }
 }
 
+# Determine default project directory if not provided
+if (-not $ProjectDir) {
+	$ProjectDir = Join-Path -Path $PSScriptRoot -ChildPath '..\..\apps\flutter_demo'
+}
+
 # Validate project directory
-$ProjectDir = (Resolve-Path -Path $ProjectDir).Path
+try {
+	$ProjectDir = (Resolve-Path -Path $ProjectDir -ErrorAction Stop).Path
+} catch {
+	Write-Err "ProjectDir not found: $ProjectDir"
+	exit 1
+}
 if (-not (Test-Path (Join-Path $ProjectDir 'pubspec.yaml'))) {
 	Write-Err "pubspec.yaml not found in ProjectDir: $ProjectDir"
 	exit 1
@@ -177,6 +188,16 @@ Write-Info "SFX module: $sfxModule"
 $archivePath = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64.7z")
 $configPath  = Join-Path $OutputDir ("$safeName-$safeVersion-sfx-config.txt")
 $portableExe = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64-portable.exe")
+
+# If -Output (alias) is provided, override the final EXE path and adjust OutputDir accordingly
+if ($Output) {
+	$portableExe = (Resolve-Path -Path (Join-Path -Path (Get-Location) -ChildPath $Output) -ErrorAction SilentlyContinue)?.Path
+	if (-not $portableExe) { $portableExe = (Join-Path -Path (Get-Location) -ChildPath $Output) }
+	$OutputDir = Split-Path -Parent $portableExe
+	Ensure-Dir $OutputDir
+	$archivePath = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64.7z")
+	$configPath  = Join-Path $OutputDir ("$safeName-$safeVersion-sfx-config.txt")
+}
 
 # Create 7z archive from the contents of the Release directory
 Write-Info "Creating 7z archive..."
