@@ -44,8 +44,7 @@ jobs:
       - name: Build portable EXE
         shell: pwsh
         run: |
-          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-          ./scripts/windows/make-sfx.ps1
+          & ./scripts/windows/make-sfx.ps1
 
       - name: Find built EXE
         id: find_exe
