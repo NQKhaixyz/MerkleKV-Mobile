@@ -54,9 +54,9 @@ function Write-Err($msg)  { Write-Error $msg }
 function Resolve-SevenZip() {
 	# Try common locations and PATH
 	$candidates = @()
-	if ($env:ProgramFiles)      { $candidates += Join-Path $env:ProgramFiles '7-Zip\7z.exe' }
-	if ($env:"ProgramW6432")   { $candidates += Join-Path $env:"ProgramW6432" '7-Zip\7z.exe' }
-	if ($env:ProgramFiles(x86)) { $candidates += Join-Path $env:ProgramFiles(x86) '7-Zip\7z.exe' }
+	if ($env:ProgramFiles)        { $candidates += Join-Path $env:ProgramFiles '7-Zip\7z.exe' }
+	if ($env:ProgramW6432)        { $candidates += Join-Path $env:ProgramW6432 '7-Zip\7z.exe' }
+	if (${env:ProgramFiles(x86)}) { $candidates += Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe' }
 	$candidates += '7z.exe'
 
 	foreach ($p in $candidates) {
