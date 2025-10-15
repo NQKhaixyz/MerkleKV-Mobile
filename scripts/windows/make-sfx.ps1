@@ -35,7 +35,7 @@
 param(
 	[string]$ProjectDir = $null,
 	[string]$OutputDir = $null,
-	[Alias('Output')][string]$Output = $null,
+	[Alias('Output')][string]$OutputPath = $null,
 	[switch]$SkipBuild
 )
 
@@ -189,11 +189,19 @@ $archivePath = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64.7z")
 $configPath  = Join-Path $OutputDir ("$safeName-$safeVersion-sfx-config.txt")
 $portableExe = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64-portable.exe")
 
-# If -Output (alias) is provided, override the final EXE path and adjust OutputDir accordingly
-if ($Output) {
-	$portableExe = (Resolve-Path -Path (Join-Path -Path (Get-Location) -ChildPath $Output) -ErrorAction SilentlyContinue)?.Path
-	if (-not $portableExe) { $portableExe = (Join-Path -Path (Get-Location) -ChildPath $Output) }
-	$OutputDir = Split-Path -Parent $portableExe
+# If -Output/-OutputPath is provided, override the final EXE path and adjust OutputDir accordingly
+if ($OutputPath) {
+	$resolvedOut = $OutputPath
+	if (-not [System.IO.Path]::IsPathRooted($resolvedOut)) {
+		$resolvedOut = Join-Path -Path (Get-Location) -ChildPath $resolvedOut
+	}
+	try {
+		$resolvedOut = (Resolve-Path -Path $resolvedOut -ErrorAction Stop).Path
+	} catch {
+		# Path may not exist yet; keep as constructed path
+	}
+	$portableExe = $resolvedOut
+	$OutputDir   = Split-Path -Parent $portableExe
 	Ensure-Dir $OutputDir
 	$archivePath = Join-Path $OutputDir ("$safeName-$safeVersion-windows-x64.7z")
 	$configPath  = Join-Path $OutputDir ("$safeName-$safeVersion-sfx-config.txt")
