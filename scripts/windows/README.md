@@ -33,6 +33,11 @@ Use `-SkipBuild` to package an existing build (Windows):
 ```
 
 Use `-ProjectDir` to target a different Flutter app directory (must contain `pubspec.yaml`):
+Specify a custom output EXE path (Windows PowerShell requires escaping backslashes or using double quotes):
+
+```
+./scripts/windows/make-sfx.ps1 -OutputPath "$pwd\apps\flutter_demo\releases\MerkleKV-Mobile.exe"
+```
 
 ```
 ./scripts/windows/make-sfx.ps1 -ProjectDir .\apps\flutter_demo
